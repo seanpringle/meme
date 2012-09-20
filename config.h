@@ -9,14 +9,19 @@
 // a script file that can be executed with CTL+j
 // useful for implementing form password autofill - see example script.js
 // NULL to ignore
-//#define SCRIPTFILE MEMEDIR "script.js"
-#define SCRIPTFILE NULL
+#define SCRIPTFILE MEMEDIR "script.js"
+//#define SCRIPTFILE NULL
 
 // a script file executed when a new page is loaded
 // note: page may not have finished loading/rendering! running script.js here won't always work...
 // NULL to ignore
-//#define ONLOADFILE MEMEDIR "onload.js"
-#define ONLOADFILE NULL
+#define ONLOADFILE MEMEDIR "onload.js"
+//#define ONLOADFILE NULL
+
+// default CSS
+// NULL to ignore
+#define STYLEFILE "file://" MEMEDIR "style.css"
+//#define STYLEFILE NULL
 
 // also see cookies setting in DOWNLOAD, below
 // NULL to ignore
@@ -27,16 +32,15 @@
 #define BOOKMARKFILE MEMEDIR "bookmarks"
 
 // %s is replace with the search term, url encoded
-// check and change .au
-#define SEARCHURL "http://google.com.au/search?q=%s"
+#define SEARCHURL "http://duckduckgo.com/?q=%s"
 
 // default cookie life
 #define SESSIONTIME 86400
 
 // check and change 'en-AU'
-#define USERAGENT "Meme/1.0 (X11; U; Unix; en-AU) AppleWebKit/531.2+ Compatible (Safari)"
-//#define USERAGENT "Mozilla/5.0 (X11; U; Linux x86_64; en-US) AppleWebKit/534.13 (KHTML, like Gecko) Chrome/9.0.597.0 Safari/534.13"
-//#define USERAGENT "Mozilla/5.0 (iPad; U; CPU OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Version/4.0.4 Mobile/7B334b Safari/531.21.10"
+//#define USERAGENT "Meme/1.0 (X11; U; Unix; en-AU) AppleWebKit/531.2+ Compatible (Safari)"
+#define USERAGENT "Mozilla/5.0 (X11; x86_64) AppleWebKit (KHTML, like Gecko) Chrome"
+
 
 // initial window dimensions
 #define WIDTH 1024
@@ -74,6 +78,14 @@ struct keycontrol keys[] = {
 	{ CTL, GDK_b,     "bookmark-page"  },
 	{ 0, 0, NULL }
 };
+
+// launch javascript fragments defined in onload.js
+struct keycontrol jskeys[] = {
+	// modifier, key, action
+	{ CTL, GDK_n, "window.meme.links()" },
+	{ 0, 0, NULL }
+};
+
 
 // true to enable webkit plugins (flash, etc) by default
 // when false, can still be enabled on the fly with "!plugins on"

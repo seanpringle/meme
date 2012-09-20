@@ -162,6 +162,11 @@ focus_uri_entry()
 	gtk_widget_grab_focus(GTK_WIDGET(uri_entry));
 }
 static void
+focus_web_view()
+{
+	gtk_widget_grab_focus (GTK_WIDGET (web_view));
+}
+static void
 focus_in_uri_entry_cb()
 {
 	apply_bookmarks();
@@ -241,18 +246,6 @@ activate_uri_entry_cb (GtkWidget* entry, gpointer data)
 	}
 	webkit_web_view_load_uri (web_view, pad);
 }
-/*
-static void
-go_back_cb (GtkWidget* widget, gpointer data)
-{
-	webkit_web_view_go_back (web_view);
-}
-static void
-go_forward_cb (GtkWidget* widget, gpointer data)
-{
-	webkit_web_view_go_forward (web_view);
-}
-*/
 static void
 update_title (GtkWindow* window)
 {
@@ -284,10 +277,7 @@ static void
 notify_load_status_cb (WebKitWebView* web_view, GParamSpec* pspec, gpointer data)
 {
 	if (webkit_web_view_get_load_status (web_view) == WEBKIT_LOAD_COMMITTED)
-	{
 		notify_title_cb(web_view, pspec, data);
-		default_uri_entry(); focus_uri_entry(); select_uri_entry();
-	}
 }
 static void
 notify_progress_cb (WebKitWebView* web_view, GParamSpec* pspec, gpointer data)
@@ -370,8 +360,8 @@ void
 key_action(const char *action)
 {
 	if (!strcmp(action, "go-home")) go_home_cb(NULL, NULL);
-	else if (!strcmp(action, "go-back")) webkit_web_view_go_back_or_forward(web_view, -1);
-	else if (!strcmp(action, "go-forward")) webkit_web_view_go_back_or_forward(web_view, 1);
+	else if (!strcmp(action, "go-back")) go_back_cb(NULL, NULL);
+	else if (!strcmp(action, "go-forward")) go_forward_cb(NULL, NULL);
 	else if (!strcmp(action, "zoom-in")) webkit_web_view_zoom_in(web_view);
 	else if (!strcmp(action, "zoom-out")) webkit_web_view_zoom_out(web_view);
 	else if (!strcmp(action, "zoom-reset")) webkit_web_view_set_zoom_level(web_view, 1.0);
@@ -390,11 +380,25 @@ keypress_cb(GtkWidget* widget, GdkEventKey *ev, gpointer data)
 {
 	guint m = (ev->state & ~(GDK_MOD2_MASK));
 	guint k = gdk_keyval_to_lower(ev->keyval);
+	if (!m && k == GDK_Escape)
+	{
+		default_uri_entry();
+		focus_web_view();
+	}
 	int i = 0; while (keys[i].action)
 	{
 		if (keys[i].mod == m && keys[i].key == k)
 		{
 			key_action(keys[i].action);
+			break;
+		}
+		i++;
+	}
+	i = 0; while (jskeys[i].action)
+	{
+		if (jskeys[i].mod == m && jskeys[i].key == k)
+		{
+			js(jskeys[i].action);
 			break;
 		}
 		i++;
@@ -464,9 +468,11 @@ request_start_cb(SoupSession *s, SoupMessage *msg, gpointer v)
 	g_signal_connect_after(G_OBJECT(msg), "got-headers", G_CALLBACK(got_headers_cb), NULL);
 }
 void
-window_object_cleared_cb(WebKitWebView *web_view, WebKitWebFrame *frame, gpointer context, gpointer window_object, gpointer user_data)
+onload_event_cb(WebKitWebView *web_view, WebKitWebFrame *frame, gpointer user_data)
 {
 	jsf_frame(ONLOADFILE, frame);
+	default_uri_entry();
+	focus_web_view();
 }
 void
 print_requested_cb(WebKitWebView *web_view, GtkMenu *menu, gpointer user_data)
@@ -507,13 +513,14 @@ create_browser ()
 	g_signal_connect(web_view, "download-requested", G_CALLBACK(download_request_cb), web_view);
 	g_signal_connect(web_view, "hovering-over-link", G_CALLBACK (link_hover_cb), web_view);
 	g_signal_connect(web_view, "create-web-view", G_CALLBACK(create_web_view_cb), web_view);
-	g_signal_connect(web_view, "window-object-cleared", G_CALLBACK(window_object_cleared_cb), web_view);
+	g_signal_connect(web_view, "onload-event", G_CALLBACK(onload_event_cb), web_view);
 	g_signal_connect(web_view, "print-requested", G_CALLBACK(print_requested_cb), web_view);
 	g_signal_connect(web_view, "mime-type-policy-decision-requested", G_CALLBACK(mime_type_policy_decision_requested_cb), web_view);
 	g_signal_connect(web_view, "new-window-policy-decision-requested", G_CALLBACK(new_window_policy_decision_requested_cb), web_view);
 
 	web_settings = webkit_web_view_get_settings(web_view);
 	g_object_set(G_OBJECT(web_settings), "user-agent", USERAGENT, NULL);
+	g_object_set(G_OBJECT(web_settings), "user-stylesheet-uri", STYLEFILE, NULL);
 	g_object_set(G_OBJECT(web_settings), "enable-developer-extras", TRUE, NULL);
 	g_object_set(G_OBJECT(web_settings), "enable-spell-checking", TRUE, NULL);
 	g_object_set(G_OBJECT(web_settings), "enable-plugins", flag_plugins, NULL);
